@@ -1,9 +1,9 @@
 import {
-  extractKeyPoint,
+  textSummarizer,
   sentimentAnalysis,
-  textSummerizer,
+  extractKeyPoints,
   toneAnalysis,
-} from "../services/aiService";
+} from "../services/aiService.js";
 
 const textAnalyzer = async (req, res) => {
   try {
@@ -43,9 +43,9 @@ const textAnalyzer = async (req, res) => {
       try {
         // Run all AI functions in parallel for speed
         const [summary, sentiment, keyPoints, tone] = await Promise.all([
-          textSummerizer(text),
+          textSummarizer(text),
           sentimentAnalysis(text),
-          extractKeyPoint(text),
+          extractKeyPoints(text),
           toneAnalysis(text),
         ]);
 

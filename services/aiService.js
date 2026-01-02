@@ -1,12 +1,11 @@
 import OpenAI from "openai";
-import { Content } from "openai/resources/containers/files/content.mjs";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Text Summerizer
-export const textSummerizer = async (text) => {
+// Text Summarizer
+export const textSummarizer = async (text) => {
   try {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -18,7 +17,7 @@ export const textSummerizer = async (text) => {
         },
         {
           role: "user",
-          content: `Summerize this text:\n\n${text}`,
+          content: `Summarize this text:\n\n${text}`,
         },
       ],
       temperature: 0.3,
@@ -26,7 +25,7 @@ export const textSummerizer = async (text) => {
     });
     return completion.choices[0].message.content;
   } catch (error) {
-    console.log("OpenAI Error:", error.message);
+    console.error("OpenAI Error:", error.message);
     throw new Error("Failed to generate summary");
   }
 };
@@ -40,7 +39,7 @@ export const sentimentAnalysis = async (text) => {
         {
           role: "system",
           content:
-            "Analyze the sentiment of the text. Respond with ONLY one word: Positive, Negative,Neutral.Nothing  else.",
+            "Analyze the sentiment of the text. Respond with ONLY one word: Positive, Negative, or Neutral. Nothing else.",
         },
         { role: "user", content: text },
       ],
@@ -49,13 +48,13 @@ export const sentimentAnalysis = async (text) => {
     });
     return completion.choices[0].message.content.trim();
   } catch (error) {
-    console.error("OpenAI Error:", error);
+    console.error("OpenAI Error:", error.message);
     throw new Error("Failed to analyze sentiment");
   }
 };
 
 // Extract key points
-export const extractKeyPoint = async (text) => {
+export const extractKeyPoints = async (text) => {
   try {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -63,7 +62,7 @@ export const extractKeyPoint = async (text) => {
         {
           role: "system",
           content:
-            'Extract 3 to 5 key point from the text, Return a JSON array of strings. Each point should be one consice senstence. Example format:[\'"Point 1", "Point 2", "Point 3\']',
+            'Extract 3 to 5 key points from the text. Return ONLY a JSON array of strings. Each point should be one concise sentence. Example format: ["Point 1", "Point 2", "Point 3"]',
         },
         { role: "user", content: text },
       ],
@@ -71,13 +70,15 @@ export const extractKeyPoint = async (text) => {
       max_tokens: 200,
     });
     const content = completion.choices[0].message.content.trim();
-    // try to parse JSON first
+
+    // Try to parse JSON first
     try {
       const parsed = JSON.parse(content);
       if (Array.isArray(parsed)) {
         return parsed.slice(0, 5);
       }
-    } catch (error) {
+    } catch (e) {
+      // If not JSON, parse as lines
       const points = content
         .split("\n")
         .filter((line) => line.trim().length > 0)
@@ -92,9 +93,10 @@ export const extractKeyPoint = async (text) => {
 
       return points;
     }
+
     return ["Unable to extract key points"];
   } catch (error) {
-    console.error("OpenAI Error:", error);
+    console.error("OpenAI Error:", error.message);
     throw new Error("Failed to extract key points");
   }
 };
@@ -120,7 +122,7 @@ export const toneAnalysis = async (text) => {
     });
     return completion.choices[0].message.content;
   } catch (error) {
-    console.log("OpenAI Error", error);
-    throw new error("Failed to anaylze the tone");
+    console.error("OpenAI Error:", error.message);
+    throw new Error("Failed to analyze the tone");
   }
 };

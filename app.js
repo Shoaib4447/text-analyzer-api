@@ -1,9 +1,8 @@
-import dotenv from "dotenv";
+import dotenv from "dotenv/config";
 import express from "express";
 import cors from "cors";
 import analyzerRouter from "./routes/textAnalyzer.js";
 
-dotenv.config();
 const app = express();
 app.use(express.json());
 app.use(cors());
