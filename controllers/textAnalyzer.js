@@ -1,12 +1,19 @@
-const textAnalyzer = (req, res) => {
+import {
+  extractKeyPoint,
+  sentimentAnalysis,
+  textSummerizer,
+  toneAnalysis,
+} from "../services/aiService";
+
+const textAnalyzer = async (req, res) => {
   try {
-    const { text } = req.body;
+    const { text, includeAI } = req.body;
     if (!text || text.trim().length === 0) {
       return res.status(400).json({
         error: "Text is required",
       });
     }
-    console.log("📥 Received request body:", req.body);
+
     // Analysis calculations
     const wordCount = text.trim().split(/\s+/).length;
     const charCount = text.trim().length;
@@ -20,17 +27,50 @@ const textAnalyzer = (req, res) => {
     const averageWordLength = (charCountNoSpaces / wordCount).toFixed(2);
     const readingTime = Math.ceil(wordCount / 200);
 
+    const analysis = {
+      wordCount,
+      charCount,
+      charCountNoSpaces,
+      sentenceCount,
+      paragraphCount,
+      averageWordLength: parseFloat(averageWordLength),
+      estimatedReadingTimeMinutes: readingTime,
+    };
+
+    // AI analysis (if requested and text is long enough)
+    if (includeAI && wordCount >= 20) {
+      console.log("🤖 Running AI analysis with OpenAI...");
+      try {
+        // Run all AI functions in parallel for speed
+        const [summary, sentiment, keyPoints, tone] = await Promise.all([
+          textSummerizer(text),
+          sentimentAnalysis(text),
+          extractKeyPoint(text),
+          toneAnalysis(text),
+        ]);
+
+        analysis.ai = {
+          summary,
+          sentiment,
+          keyPoints,
+          tone,
+        };
+        console.log("✅ AI analysis complete");
+      } catch (aiError) {
+        console.error("AI analysis failed:", aiError.message);
+        analysis.ai = {
+          error: "AI analysis failed. Please try again.",
+        };
+      }
+    } else if (includeAI && wordCount < 20) {
+      analysis.ai = {
+        error:
+          "Text too short for AI analysis. Please enter at least 20 words.",
+      };
+    }
     res.json({
       success: true,
-      analysis: {
-        wordCount,
-        charCount,
-        charCountNoSpaces,
-        sentenceCount,
-        paragraphCount,
-        averageWordLength: parseFloat(averageWordLength),
-        estimatedReadingTimeMinutes: readingTime,
-      },
+      analysis,
       text: text.substring(0, 100) + (text.length > 100 ? "..." : ""),
     });
   } catch (error) {
